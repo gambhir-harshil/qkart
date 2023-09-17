@@ -7,6 +7,7 @@ import { config } from "../App";
 import Footer from "./Footer";
 import Header from "./Header";
 import "./Register.css";
+import { Link, useHistory } from 'react-router-dom'
 
 const Register = () => {
   const { enqueueSnackbar } = useSnackbar();
@@ -14,6 +15,7 @@ const Register = () => {
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [loader, setLoader] = useState(false);
+  const history=useHistory();
 
   // TODO: CRIO_TASK_MODULE_REGISTER - Implement the register function
   /**
@@ -51,6 +53,7 @@ const Register = () => {
       });
       console.log(res.data);
       enqueueSnackbar("Registered successfully", { variant: "success" });
+      history.push("/login")
     } catch (e) {
       axios
         .post(`${url}/auth/register`, {
@@ -185,9 +188,9 @@ const Register = () => {
 
           <p className="secondary-action">
             Already have an account?{" "}
-            <a className="link" href="#">
+            <Link className="link" to="/login">
               Login here
-            </a>
+            </Link>
           </p>
         </Stack>
       </Box>
