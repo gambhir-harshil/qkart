@@ -29,6 +29,9 @@ import "./Products.css";
 
 const Products = () => {
   const [products, setProducts] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [productNotFound, setProductNotFound] = useState(false);
+  const [timer, setTimer] = useState("");
   // TODO: CRIO_TASK_MODULE_PRODUCTS - Fetch products data and store it
   /**
    * Make API call to get the products list and store it to display the products
@@ -68,16 +71,19 @@ const Products = () => {
    */
   const performAPICall = async () => {
     try {
+      setLoading(true);
       const url = config.endpoint;
       const product = await axios.get(`${url}/products`);
       setProducts(product.data);
       return product.data;
     } catch (error) {
       console.log(error.message);
+    } finally {
+      setLoading(false);
     }
   };
 
-  console.log(products);
+  //console.log(products);
 
   useEffect(() => {
     performAPICall();
@@ -97,7 +103,21 @@ const Products = () => {
    * API endpoint - "GET /products/search?value=<search-query>"
    *
    */
-  const performSearch = async (text) => {};
+  const performSearch = async (text) => {
+    try {
+      const url = config.endpoint;
+      const product = await axios
+        .get(`${url}/products/search?value=${text}`)
+        .catch((e) => setProductNotFound(true));
+
+      if (product.data) {
+        setProductNotFound(false);
+        setProducts(product.data);
+      }
+    } catch (e) {
+      console.log(e.message);
+    }
+  };
 
   // TODO: CRIO_TASK_MODULE_PRODUCTS - Optimise API calls with debounce search implementation
   /**
@@ -111,12 +131,31 @@ const Products = () => {
    *    Timer id set for the previous debounce call
    *
    */
-  const debounceSearch = (event, debounceTimeout) => {};
+  const debounceSearch = (event, debounceTimeout) => {
+    clearTimeout(debounceSearch);
+
+    const timer = setTimeout(() => performSearch(event), 500);
+    setTimer(timer);
+  };
 
   return (
     <div>
-      <Header>
+      <Header hasHiddenAuthButtons={false}>
         {/* TODO: CRIO_TASK_MODULE_PRODUCTS - Display search bar in the header for Products page */}
+        <TextField
+          className="search-desktop"
+          size="small"
+          placeholder="Search for items/categories"
+          name="search"
+          onChange={(e) => debounceSearch(e.target.value, timer)}
+          InputProps={{
+            endAdornment: (
+              <InputAdornment position="end">
+                <Search color="primary" />
+              </InputAdornment>
+            ),
+          }}
+        />
       </Header>
 
       {/* Search view for mobiles */}
@@ -124,6 +163,7 @@ const Products = () => {
         className="search-mobile"
         size="small"
         fullWidth
+        onChange={(e) => debounceSearch(e.target.value, timer)}
         InputProps={{
           endAdornment: (
             <InputAdornment position="end">
@@ -144,16 +184,31 @@ const Products = () => {
           </Box>
         </Grid>
       </Grid>
-      <Box sx={{flexGrow: 1}} style={{padding: '1rem', marginLeft: '1rem', marginRight: '1rem'}}>
-        <Grid container spacing={1}>
-          <Grid container spacing={{ xs: 2, md: 3, lg: 3 }}>
-            {products.map((product, id) => (
-              <Grid item lg={3} xs={6} mt={2} mb={2} key={id}>
-                <ProductCard product={product} />
-              </Grid>
-            ))}
+      <Box
+        sx={{ flexGrow: 1 }}
+        style={{ padding: "1rem", marginLeft: "1rem", marginRight: "1rem" }}
+      >
+        {loading ? (
+          <div className="loading">
+            <CircularProgress />
+            <h3>Loading Products...</h3>
+          </div>
+        ) : !productNotFound ? (
+          <Grid container spacing={1}>
+            <Grid container spacing={{ xs: 2, md: 3, lg: 3 }}>
+              {products.map((product, id) => (
+                <Grid item md={3} xs={6} mt={2} mb={2} key={id}>
+                  <ProductCard product={product} />
+                </Grid>
+              ))}
+            </Grid>
           </Grid>
-        </Grid>
+        ) : (
+          <div className="loading">
+            <SentimentDissatisfied />
+            <h3>No Products Found!</h3>
+          </div>
+        )}
       </Box>
       <Footer />
     </div>

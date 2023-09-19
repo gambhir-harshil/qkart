@@ -40,7 +40,7 @@ const ProductCard = ({ product }) => {
         </CardActionArea>
         <CardActions>
             <Button fullWidth color="primary" variant="contained" value={_id}>
-                <AddShoppingCartOutlined /> ADD TO CART
+                <AddShoppingCartOutlined /> add to cart
             </Button>
         </CardActions>
     </Card>
