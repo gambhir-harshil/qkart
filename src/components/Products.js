@@ -132,10 +132,10 @@ const Products = () => {
    *
    */
   const debounceSearch = (event, debounceTimeout) => {
-    clearTimeout(debounceSearch);
+    clearTimeout(timer);
 
-    const timer = setTimeout(() => performSearch(event), 500);
-    setTimer(timer);
+    const newTimer = setTimeout(() => performSearch(event), 500);
+    setTimer(newTimer);
   };
 
   return (
