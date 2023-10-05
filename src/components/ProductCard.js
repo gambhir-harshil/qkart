@@ -12,37 +12,40 @@ import {
 import React from "react";
 import "./ProductCard.css";
 
-const ProductCard = ({ product }) => {
-
-  const { _id, cost, image, rating, name } = product
+const ProductCard = ({ product, handleAddToCart }) => {
+  const { _id, cost, image, rating, name } = product;
 
   return (
     <Card className="card">
       <CardActionArea>
-            <CardMedia
-                component="img" 
-                height="240"
-                image={image}
-                alt={name}
-                style={{objectFit: 'cover'}}
-            />
-            <CardContent>
-                <Typography gutterBottom variant="h5" component="div">
-                    {name}
-                </Typography>
-                <Typography>
-                    ${cost}
-                </Typography>
-                <Typography>
-                    <Rating name="read-only" value={rating} readOnly />
-                </Typography>
-            </CardContent>
-        </CardActionArea>
-        <CardActions>
-            <Button fullWidth color="primary" variant="contained" value={_id}>
-                <AddShoppingCartOutlined /> add to cart
-            </Button>
-        </CardActions>
+        <CardMedia
+          component="img"
+          height="240"
+          image={image}
+          alt={name}
+          style={{ objectFit: "cover" }}
+        />
+        <CardContent>
+          <Typography gutterBottom variant="h5" component="div">
+            {name}
+          </Typography>
+          <Typography>${cost}</Typography>
+          <Typography>
+            <Rating name="read-only" value={rating} readOnly />
+          </Typography>
+        </CardContent>
+      </CardActionArea>
+      <CardActions>
+        <Button
+          fullWidth
+          color="primary"
+          variant="contained"
+          value={_id}
+          onClick={handleAddToCart}
+        >
+          <AddShoppingCartOutlined /> add to cart
+        </Button>
+      </CardActions>
     </Card>
   );
 };

@@ -14,6 +14,7 @@ import Footer from "./Footer";
 import Header from "./Header";
 import ProductCard from "./ProductCard";
 import "./Products.css";
+import Cart, { generateCartItemsFrom } from "./Cart";
 
 // Definition of Data Structures used
 /**
@@ -29,9 +30,15 @@ import "./Products.css";
 
 const Products = () => {
   const [products, setProducts] = useState([]);
+  const [cart, setCart] = useState([]);
   const [loading, setLoading] = useState(false);
   const [productNotFound, setProductNotFound] = useState(false);
   const [timer, setTimer] = useState("");
+  const [loggedIn, setLoggedIn] = useState(false);
+  const [userCart, setUserCart] = useState([]);
+  const [token, setToken] = useState("");
+
+  const { enqueueSnackbar } = useSnackbar();
   // TODO: CRIO_TASK_MODULE_PRODUCTS - Fetch products data and store it
   /**
    * Make API call to get the products list and store it to display the products
@@ -86,7 +93,22 @@ const Products = () => {
   //console.log(products);
 
   useEffect(() => {
-    performAPICall();
+    async function onLoad() {
+      const product = performAPICall();
+      const user = localStorage.getItem("username");
+      if (user) {
+        setLoggedIn(true);
+      }
+      let token = localStorage.getItem("token");
+      if (token) {
+        setToken(token);
+        const cartItems = await fetchCart(token);
+        setUserCart(cartItems);
+        const cart = await generateCartItemsFrom(cartItems, product);
+        setCart(cart);
+      }
+    }
+    onLoad();
   }, []);
 
   // TODO: CRIO_TASK_MODULE_PRODUCTS - Implement search logic
@@ -132,21 +154,163 @@ const Products = () => {
    *
    */
   const debounceSearch = (event, debounceTimeout) => {
-    clearTimeout(timer);
+    clearTimeout(debounceTimeout);
 
     const newTimer = setTimeout(() => performSearch(event), 500);
     setTimer(newTimer);
   };
 
+  async function fetchCart(token) {
+    if (!token) return;
+
+    try {
+      let url = config.endpoint + "/cart";
+      let cartData = await axios.get(url, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      return cartData.data;
+    } catch (e) {
+      if (e.response && e.response.status === 400) {
+        enqueueSnackbar(e.response.data.message, { variant: "error" });
+      } else {
+        enqueueSnackbar(
+          "Could not fetch cart details. Check if the backend is running, reachable and returns a valid JSON.",
+          {
+            variant: "error",
+          }
+        );
+      }
+      return null;
+    }
+  }
+
+  const isItemInCart = (items, productId) => {
+    for (let i = 0; i < items.length; i++) {
+      if (items[i]["_id"] === productId) {
+        enqueueSnackbar(
+          "Item already in cart. Use the cart sidebar to update quantity or remove item.",
+          { variant: "warning" }
+        );
+        return true;
+      }
+    }
+    return false;
+  };
+
+  const addToCart = async (
+    token,
+    items,
+    products,
+    productId,
+    qty,
+    options = { preventDuplicate: false }
+  ) => {
+    if (options.preventDuplicate === true) {
+      try {
+        let url = config.endpoint + "/cart";
+        let res = await axios.post(
+          url,
+          { productId: productId, qty: qty },
+          { headers: { Authorization: `Bearer ${token}` } }
+        );
+        const cartData = await generateCartItemsFrom(res.data, products);
+        setCart(cartData);
+      } catch (e) {
+        console.log(e);
+      }
+    } else {
+      let index;
+      for (let i = 0; i < items.length; i++) {
+        if (items[i]["productId"] === productId) {
+          index = i;
+        }
+      }
+      if (options.preventDuplicate === "handleAdd") {
+        items[index]["qty"]++;
+      } else {
+        items[index]["qty"]--;
+      }
+      let url = config.endpoint + "/cart";
+      let res = await axios.post(
+        url,
+        { productId: productId, qty: items[index]["qty"] },
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      const cartData = await generateCartItemsFrom(res.data, products);
+      setCart(cartData);
+    }
+  };
+
+  let addItems = (e) => {
+    if (!loggedIn) {
+      enqueueSnackbar("Login to add an item to the Cart", {
+        variant: "warning",
+      });
+    } else {
+      let result = isItemInCart(cart, e.target.value);
+      if (!result) {
+        addToCart(token, userCart, products, e.target.value, 1, {
+          preventDuplicate: true,
+        });
+      } else {
+        enqueueSnackbar(
+          "Item already in cart. Use the cart sidebar to update quantity or remove item.",
+          { variant: "warning" }
+        );
+      }
+    }
+  };
+
+  const addInCart = async (productId, qty) => {
+    await axios
+      .post(
+        `${config.endpoint}/cart`,
+        { productId: productId, qty: qty },
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      )
+      .then((response) => {
+        const cartData = generateCartItemsFrom(response.data, products);
+        setCart(() => cartData);
+      })
+      .catch((error) => {
+        enqueueSnackbar("Something went wrong", { variant: "error" });
+      });
+  };
+
+  const onButtonClick = (id, qty) => {
+    addInCart(id, qty);
+  };
+
   return (
-    <div>
-      <Header hasHiddenAuthButtons={false}>
-        {/* TODO: CRIO_TASK_MODULE_PRODUCTS - Display search bar in the header for Products page */}
+    <>
+      <div>
+        <Header hasHiddenAuthButtons={false}>
+          {/* TODO: CRIO_TASK_MODULE_PRODUCTS - Display search bar in the header for Products page */}
+          <TextField
+            className="search-desktop"
+            size="small"
+            placeholder="Search for items/categories"
+            name="search"
+            onChange={(e) => debounceSearch(e.target.value, timer)}
+            InputProps={{
+              endAdornment: (
+                <InputAdornment position="end">
+                  <Search color="primary" />
+                </InputAdornment>
+              ),
+            }}
+          />
+        </Header>
+
+        {/* Search view for mobiles */}
         <TextField
-          className="search-desktop"
+          className="search-mobile"
           size="small"
-          placeholder="Search for items/categories"
-          name="search"
+          fullWidth
           onChange={(e) => debounceSearch(e.target.value, timer)}
           InputProps={{
             endAdornment: (
@@ -155,63 +319,68 @@ const Products = () => {
               </InputAdornment>
             ),
           }}
+          placeholder="Search for items/categories"
+          name="search"
         />
-      </Header>
-
-      {/* Search view for mobiles */}
-      <TextField
-        className="search-mobile"
-        size="small"
-        fullWidth
-        onChange={(e) => debounceSearch(e.target.value, timer)}
-        InputProps={{
-          endAdornment: (
-            <InputAdornment position="end">
-              <Search color="primary" />
-            </InputAdornment>
-          ),
-        }}
-        placeholder="Search for items/categories"
-        name="search"
-      />
-      <Grid container>
-        <Grid item className="product-grid">
-          <Box className="hero">
-            <p className="hero-heading">
-              India’s <span className="hero-highlight">FASTEST DELIVERY</span>{" "}
-              to your door step
-            </p>
-          </Box>
-        </Grid>
-      </Grid>
-      <Box
-        sx={{ flexGrow: 1 }}
-        style={{ padding: "1rem", marginLeft: "1rem", marginRight: "1rem" }}
-      >
-        {loading ? (
-          <div className="loading">
-            <CircularProgress />
-            <h3>Loading Products...</h3>
-          </div>
-        ) : !productNotFound ? (
-          <Grid container spacing={1}>
-            <Grid container spacing={{ xs: 2, md: 3, lg: 3 }}>
-              {products.map((product, id) => (
-                <Grid item md={3} xs={6} mt={2} mb={2} key={id}>
-                  <ProductCard product={product} />
-                </Grid>
-              ))}
-            </Grid>
+        <Grid container>
+          <Grid item className="product-grid">
+            <Box className="hero">
+              <p className="hero-heading">
+                India’s <span className="hero-highlight">FASTEST DELIVERY</span>{" "}
+                to your door step
+              </p>
+            </Box>
           </Grid>
-        ) : (
-          <div className="loading">
-            <SentimentDissatisfied />
-            <h3>No Products Found!</h3>
-          </div>
-        )}
-      </Box>
-      <Footer />
-    </div>
+        </Grid>
+        <Box
+          sx={{ flexGrow: 1 }}
+          style={{ padding: "1rem", marginLeft: "1rem", marginRight: "1rem" }}
+        >
+          {loading ? (
+            <div className="loading">
+              <CircularProgress />
+              <h3>Loading Products...</h3>
+            </div>
+          ) : !productNotFound ? (
+            <>
+              <Grid container>
+                <Grid item xs={12} md={9}>
+                  <Grid
+                    container
+                    spacing={{ xs: 2, md: 3, lg: 3 }}
+                    display="flex"
+                  >
+                    {products.map((product, id) => (
+                      <Grid item md={3} xs={6} mt={2} mb={2} key={id}>
+                        <ProductCard
+                          product={product}
+                          handleAddToCart={addItems}
+                        />
+                      </Grid>
+                    ))}
+                  </Grid>
+                </Grid>
+                {loggedIn && (
+                  <Grid item md={3} sm={12} sx={{ backgroundColor: "#E9F5E1" }}>
+                    <Cart
+                      products={products}
+                      items={cart}
+                      handleQuantity={onButtonClick}
+                    />
+                  </Grid>
+                )}
+              </Grid>
+            </>
+          ) : (
+            <div className="loading">
+              <SentimentDissatisfied />
+              <h3>No Products Found!</h3>
+            </div>
+          )}
+        </Box>
+        <Footer />
+      </div>
+    </>
   );
 };
 
