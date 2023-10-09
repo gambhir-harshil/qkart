@@ -135,8 +135,8 @@ const ItemQuantity = ({ value, handleAdd, handleDelete, productId }) => {
  *
  *
  */
-
-function CartItem({ items, handleQuantity }) {
+let token=localStorage.getItem("token");
+function CartItem({ items, handleQuantity,products }) {
   const { image, name, cost, qty, _id: id } = items;
   console.log(qty);
   return (
@@ -155,8 +155,8 @@ function CartItem({ items, handleQuantity }) {
         <Box display="flex" justifyContent="space-between" alignItems="center">
           <ItemQuantity
             value={qty}
-            handleAdd={() => handleQuantity(id, qty + 1)}
-            handleDelete={() => handleQuantity(id, qty - 1)}
+            handleAdd={() => handleQuantity(token,items,products,id, qty + 1)}
+            handleDelete={() => handleQuantity(token,items,products,id, qty - 1)}
           />
           <Box padding="0.5rem" fontWeight="700">
             ${cost}
@@ -189,6 +189,7 @@ const Cart = ({ products, items = [], handleQuantity }) => {
               items={values}
               key={values["_id"]}
               handleQuantity={handleQuantity}
+              products={products}
             />
           );
         })}
