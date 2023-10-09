@@ -7,7 +7,6 @@ import {
 import { Button, IconButton, Stack } from "@mui/material";
 import { Box } from "@mui/system";
 import React from "react";
-import { useHistory } from "react-router-dom";
 import "./Cart.css";
 
 // Definition of Data Structures used
@@ -47,15 +46,13 @@ import "./Cart.css";
  *    Array of objects with complete data on products in cart
  *
  */
-export const generateCartItemsFrom = async (cartData, productsData) => {
-  console.log(productsData);
+export const generateCartItemsFrom = (cartData, productsData) => {
   const cartItems = [];
-  const products = await productsData;
+  const products = productsData;
   cartData.forEach((data) => {
     const product = products.filter((product) => {
       return product._id === data.productId;
     });
-    console.log(data);
     const details = {
       ...data,
       ...product[0],
@@ -105,16 +102,26 @@ export const getTotalCartValue = (items = []) => {
  *
  *
  */
-const ItemQuantity = ({ value, handleAdd, handleDelete, productId }) => {
+const ItemQuantity = ({ value, handleAdd, handleDelete, id }) => {
   return (
     <Stack direction="row" alignItems="center">
-      <IconButton size="small" color="primary" onClick={handleDelete}>
+      <IconButton
+        size="small"
+        color="primary"
+        onClick={(e) => {
+          handleDelete(id, "handleDelete");
+        }}
+      >
         <RemoveOutlined />
       </IconButton>
       <Box padding="0.5rem" data-testid="item-qty">
         {value}
       </Box>
-      <IconButton size="small" color="primary" onClick={handleAdd}>
+      <IconButton
+        size="small"
+        color="primary"
+        onClick={(e) => handleAdd(id, "handleAdd")}
+      >
         <AddOutlined />
       </IconButton>
     </Stack>
@@ -138,7 +145,6 @@ const ItemQuantity = ({ value, handleAdd, handleDelete, productId }) => {
 
 function CartItem({ items, handleQuantity }) {
   const { image, name, cost, qty, _id: id } = items;
-  console.log(qty);
   return (
     <Box display="flex" alignItems="flex-start" padding="1rem">
       <Box className="image-container">
@@ -155,8 +161,9 @@ function CartItem({ items, handleQuantity }) {
         <Box display="flex" justifyContent="space-between" alignItems="center">
           <ItemQuantity
             value={qty}
-            handleAdd={() => handleQuantity(id, qty + 1)}
-            handleDelete={() => handleQuantity(id, qty - 1)}
+            handleAdd={handleQuantity}
+            handleDelete={handleQuantity}
+            id={id}
           />
           <Box padding="0.5rem" fontWeight="700">
             ${cost}
@@ -187,8 +194,8 @@ const Cart = ({ products, items = [], handleQuantity }) => {
           return (
             <CartItem
               items={values}
-              key={values["_id"]}
               handleQuantity={handleQuantity}
+              key={values["_id"]}
             />
           );
         })}
