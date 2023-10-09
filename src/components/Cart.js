@@ -7,8 +7,8 @@ import {
 import { Button, IconButton, Stack } from "@mui/material";
 import { Box } from "@mui/system";
 import React from "react";
-import { useHistory } from "react-router-dom";
 import "./Cart.css";
+import { useHistory } from "react-router-dom";
 
 // Definition of Data Structures used
 /**
@@ -47,15 +47,13 @@ import "./Cart.css";
  *    Array of objects with complete data on products in cart
  *
  */
-export const generateCartItemsFrom = async (cartData, productsData) => {
-  console.log(productsData);
+export const generateCartItemsFrom = (cartData, productsData) => {
   const cartItems = [];
-  const products = await productsData;
+  const products = productsData;
   cartData.forEach((data) => {
     const product = products.filter((product) => {
       return product._id === data.productId;
     });
-    console.log(data);
     const details = {
       ...data,
       ...product[0],
@@ -105,16 +103,26 @@ export const getTotalCartValue = (items = []) => {
  *
  *
  */
-const ItemQuantity = ({ value, handleAdd, handleDelete, productId }) => {
+const ItemQuantity = ({ value, handleAdd, handleDelete, id }) => {
   return (
     <Stack direction="row" alignItems="center">
-      <IconButton size="small" color="primary" onClick={handleDelete}>
+      <IconButton
+        size="small"
+        color="primary"
+        onClick={(e) => {
+          handleDelete(id, "handleDelete");
+        }}
+      >
         <RemoveOutlined />
       </IconButton>
       <Box padding="0.5rem" data-testid="item-qty">
         {value}
       </Box>
-      <IconButton size="small" color="primary" onClick={handleAdd}>
+      <IconButton
+        size="small"
+        color="primary"
+        onClick={(e) => handleAdd(id, "handleAdd")}
+      >
         <AddOutlined />
       </IconButton>
     </Stack>
@@ -138,7 +146,6 @@ const ItemQuantity = ({ value, handleAdd, handleDelete, productId }) => {
 let token=localStorage.getItem("token");
 function CartItem({ items, handleQuantity,products }) {
   const { image, name, cost, qty, _id: id } = items;
-  console.log(qty);
   return (
     <Box display="flex" alignItems="flex-start" padding="1rem">
       <Box className="image-container">
@@ -155,8 +162,9 @@ function CartItem({ items, handleQuantity,products }) {
         <Box display="flex" justifyContent="space-between" alignItems="center">
           <ItemQuantity
             value={qty}
-            handleAdd={() => handleQuantity(token,items,products,id, qty + 1)}
-            handleDelete={() => handleQuantity(token,items,products,id, qty - 1)}
+            handleAdd={handleQuantity}
+            handleDelete={handleQuantity}
+            id={id}
           />
           <Box padding="0.5rem" fontWeight="700">
             ${cost}
@@ -168,6 +176,7 @@ function CartItem({ items, handleQuantity,products }) {
 }
 
 const Cart = ({ products, items = [], handleQuantity }) => {
+  let history = useHistory();
   if (!items.length) {
     return (
       <Box className="cart empty">
@@ -187,9 +196,8 @@ const Cart = ({ products, items = [], handleQuantity }) => {
           return (
             <CartItem
               items={values}
-              key={values["_id"]}
               handleQuantity={handleQuantity}
-              products={products}
+              key={values["_id"]}
             />
           );
         })}
@@ -218,6 +226,7 @@ const Cart = ({ products, items = [], handleQuantity }) => {
             color="primary"
             variant="contained"
             startIcon={<ShoppingCart />}
+            onClick={(e) => history.push("/checkout")}
             className="checkout-btn"
           >
             Checkout

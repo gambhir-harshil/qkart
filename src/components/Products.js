@@ -29,14 +29,16 @@ import Cart, { generateCartItemsFrom } from "./Cart";
  */
 
 const Products = () => {
+  const loggedIn = window.localStorage.getItem("username");
   const [products, setProducts] = useState([]);
+  const [token, setToken] = useState("");
   const [cart, setCart] = useState([]);
   const [loading, setLoading] = useState(false);
   const [productNotFound, setProductNotFound] = useState(false);
   const [timer, setTimer] = useState("");
-  const [loggedIn, setLoggedIn] = useState(false);
   const [userCart, setUserCart] = useState([]);
-  const [token, setToken] = useState("");
+
+  console.log(userCart);
 
   const { enqueueSnackbar } = useSnackbar();
   // TODO: CRIO_TASK_MODULE_PRODUCTS - Fetch products data and store it
@@ -94,17 +96,13 @@ const Products = () => {
 
   useEffect(() => {
     async function onLoad() {
-      const product = performAPICall();
-      const user = localStorage.getItem("username");
-      if (user) {
-        setLoggedIn(true);
-      }
+      const product = await performAPICall();
       let token = localStorage.getItem("token");
       if (token) {
         setToken(token);
         const cartItems = await fetchCart(token);
         setUserCart(cartItems);
-        const cart = await generateCartItemsFrom(cartItems, product);
+        const cart = generateCartItemsFrom(cartItems, product);
         setCart(cart);
       }
     }
@@ -205,6 +203,7 @@ const Products = () => {
     qty,
     options = { preventDuplicate: false }
   ) => {
+    console.log(items);
     if (options.preventDuplicate === true) {
       try {
         let url = config.endpoint + "/cart";
@@ -215,6 +214,7 @@ const Products = () => {
         );
         const cartData = await generateCartItemsFrom(res.data, products);
         setCart(cartData);
+        setUserCart(cartData);
       } catch (e) {
         console.log(e);
       }
@@ -261,28 +261,11 @@ const Products = () => {
     }
   };
 
-  const addInCart = async (productId, qty) => {
-    await axios
-      .post(
-        `${config.endpoint}/cart`,
-        { productId: productId, qty: qty },
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        }
-      )
-      .then((response) => {
-        const cartData = generateCartItemsFrom(response.data, products);
-        setCart(() => cartData);
-      })
-      .catch((error) => {
-        enqueueSnackbar("Something went wrong", { variant: "error" });
-      });
-  };
-
-  const onButtonClick = (id, qty) => {
-    addInCart(id, qty);
+  const onButtonClick = (id, handle) => {
+    console.log(id);
+    addToCart(token, userCart, products, id, null, {
+      preventDuplicate: handle,
+    });
   };
 
   return (
