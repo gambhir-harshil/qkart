@@ -8,6 +8,7 @@ import { Button, IconButton, Stack } from "@mui/material";
 import { Box } from "@mui/system";
 import React from "react";
 import "./Cart.css";
+import { useHistory } from "react-router-dom";
 
 // Definition of Data Structures used
 /**
@@ -175,6 +176,7 @@ function CartItem({ items, handleQuantity }) {
 }
 
 const Cart = ({ products, items = [], handleQuantity }) => {
+  let history = useHistory();
   if (!items.length) {
     return (
       <Box className="cart empty">
@@ -224,6 +226,7 @@ const Cart = ({ products, items = [], handleQuantity }) => {
             color="primary"
             variant="contained"
             startIcon={<ShoppingCart />}
+            onClick={(e) => history.push("/checkout")}
             className="checkout-btn"
           >
             Checkout

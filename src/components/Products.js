@@ -214,6 +214,7 @@ const Products = () => {
         );
         const cartData = await generateCartItemsFrom(res.data, products);
         setCart(cartData);
+        setUserCart(cartData);
       } catch (e) {
         console.log(e);
       }
@@ -223,7 +224,6 @@ const Products = () => {
         if (items[i]["productId"] === productId) {
           index = i;
         }
-        console.log(index);
       }
       if (options.preventDuplicate === "handleAdd") {
         items[index]["qty"]++;
