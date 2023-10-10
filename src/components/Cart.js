@@ -64,10 +64,12 @@ export const generateCartItemsFrom = (cartData, productsData) => {
 };
 
 export const getTotalItems = (items = []) => {
+  console.log(items);
   let total = 0;
   for (let i = 0; i < items.length; i++) {
-    total += items[i].quantity;
+    total += items[i].qty;
   }
+  console.log(total);
   return total;
 };
 
@@ -143,8 +145,8 @@ const ItemQuantity = ({ value, handleAdd, handleDelete, id }) => {
  *
  *
  */
-let token=localStorage.getItem("token");
-function CartItem({ items, handleQuantity,products }) {
+
+function CartItem({ items, handleQuantity, products, isReadOnly }) {
   const { image, name, cost, qty, _id: id } = items;
   return (
     <Box display="flex" alignItems="flex-start" padding="1rem">
@@ -160,12 +162,16 @@ function CartItem({ items, handleQuantity,products }) {
       >
         <span>{name}</span>
         <Box display="flex" justifyContent="space-between" alignItems="center">
-          <ItemQuantity
-            value={qty}
-            handleAdd={handleQuantity}
-            handleDelete={handleQuantity}
-            id={id}
-          />
+          {!isReadOnly ? (
+            <ItemQuantity
+              value={qty}
+              handleAdd={handleQuantity}
+              handleDelete={handleQuantity}
+              id={id}
+            />
+          ) : (
+            <Box>Qty: {qty}</Box>
+          )}
           <Box padding="0.5rem" fontWeight="700">
             ${cost}
           </Box>
@@ -175,7 +181,7 @@ function CartItem({ items, handleQuantity,products }) {
   );
 }
 
-const Cart = ({ products, items = [], handleQuantity }) => {
+const Cart = ({ products, items = [], handleQuantity, isReadOnly }) => {
   let history = useHistory();
   if (!items.length) {
     return (
@@ -198,6 +204,7 @@ const Cart = ({ products, items = [], handleQuantity }) => {
               items={values}
               handleQuantity={handleQuantity}
               key={values["_id"]}
+              isReadOnly={isReadOnly}
             />
           );
         })}
@@ -222,15 +229,17 @@ const Cart = ({ products, items = [], handleQuantity }) => {
         </Box>
 
         <Box display="flex" justifyContent="flex-end" className="cart-footer">
-          <Button
-            color="primary"
-            variant="contained"
-            startIcon={<ShoppingCart />}
-            onClick={(e) => history.push("/checkout")}
-            className="checkout-btn"
-          >
-            Checkout
-          </Button>
+          {!isReadOnly && (
+            <Button
+              color="primary"
+              variant="contained"
+              startIcon={<ShoppingCart />}
+              onClick={() => history.push("/checkout")}
+              className="checkout-btn"
+            >
+              Checkout
+            </Button>
+          )}
         </Box>
       </Box>
     </>
