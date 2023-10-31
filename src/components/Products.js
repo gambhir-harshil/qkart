@@ -262,7 +262,6 @@ const Products = () => {
   };
 
   const onButtonClick = (id, handle) => {
-    console.log(id);
     addToCart(token, userCart, products, id, null, {
       preventDuplicate: handle,
     });
